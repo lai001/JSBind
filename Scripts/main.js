@@ -1,4 +1,4 @@
-import { A, B, SharedPtrB } from "ks";
+import { A, B, SharedPtrB, BB, BBB } from "ks";
 
 for (let index = 0; index < 2; index++) {
     let a = new A(50 + index, 150 + index);
@@ -39,3 +39,17 @@ try {
 } catch (error) {
     console.log(11, error);
 }
+
+let bb = new BB();
+console.log(12, `data0: ${bb.data0}, data1: ${bb.data1} str: ${bb.str}`);
+
+let bbb = new BBB();
+console.log(13, `data0: ${bb.data0}, data1: ${bb.data1}, data2: ${bbb.data2}, str: ${bbb.str}`);
+
+let b = new B();
+b.cppvector = [1, 2, 3];
+b.cppvector.set(2, 200)
+console.log(b.cppvector.get(2));
+
+
+globalThis.array = [1, 2, 3, 4, 4]

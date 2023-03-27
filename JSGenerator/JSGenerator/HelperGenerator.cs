@@ -6,11 +6,8 @@ namespace JSGenerator
 {
     class HelperGenerator
     {
-        string outputPath;
-
-        public HelperGenerator(string outputPath)
-        {
-            this.outputPath = outputPath;
+        public HelperGenerator()
+        { 
         }
 
         private string getH()
@@ -50,7 +47,7 @@ JSCFunctionListEntry js_cfunc_def(const char* name, const uint8_t length, declty
 
 JSCFunctionListEntry js_cgetset_def(const char* name, decltype(JSCFunctionType::getter) getter, decltype(JSCFunctionType::setter) setter);
 
-int SetModuleExportHelper(JSContext* ctx, JSModuleDef* def, const JSClassDef* class_def, JSClassID* class_id, JSCFunction* constructor_func, const int constructor_func_length, const JSCFunctionListEntry* entries, const int entries_length);
+int SetModuleExportHelper(JSContext* ctx, JSModuleDef* def, const JSClassDef* class_def, JSClassID* class_id, JSCFunction* constructor_func, const int constructor_func_length, const JSCFunctionListEntry* entries, const int entries_length, JSValue* outObject);
 
 JSValue NewObjectProtoClass(JSContext* ctx, JSClassID class_id, JSValueConst new_target, void* userData);";
         }
@@ -103,7 +100,7 @@ JSCFunctionListEntry js_cfunc_def(const char* name, const uint8_t length, declty
 
 int SetModuleExportHelper(JSContext *ctx, JSModuleDef *def, const JSClassDef *class_def, JSClassID* class_id,
                           JSCFunction *constructor_func, const int constructor_func_length,
-                          const JSCFunctionListEntry *entries, const int entries_length)
+                          const JSCFunctionListEntry *entries, const int entries_length, JSValue* outObject)
 {{
     assert(ctx);
     assert(def);
@@ -128,7 +125,15 @@ int SetModuleExportHelper(JSContext *ctx, JSModuleDef *def, const JSClassDef *cl
     }}
     JS_SetConstructor(ctx, constructor_func_object, object_proto);
     JS_SetClassProto(ctx, *class_id, object_proto);
-    return JS_SetModuleExport(ctx, def, class_def->class_name, constructor_func_object);
+    if (int ret = JS_SetModuleExport(ctx, def, class_def->class_name, constructor_func_object) < 0)
+    {{
+        return ret;
+    }}
+    else if (outObject)
+    {{
+        *outObject = object_proto;
+    }}
+    return 0;
 }}
 
 JSValue NewObjectProtoClass(JSContext* ctx, JSClassID class_id, JSValueConst new_target, void* userData)
@@ -151,13 +156,12 @@ JSValue NewObjectProtoClass(JSContext* ctx, JSClassID class_id, JSValueConst new
 ";
         }
 
-        public void save()
+        public void save(string outputFolderPath)
         {
-            System.IO.Directory.CreateDirectory(outputPath);
+            System.IO.Directory.CreateDirectory(outputFolderPath);
 
-
-            System.IO.File.WriteAllText(outputPath + "/" + "_QuickjsHelper.h", getH());
-            System.IO.File.WriteAllText(outputPath + "/" + "_QuickjsHelper.cpp", getS());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.h", getH());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.cpp", getS());
         }
     }
 }

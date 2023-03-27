@@ -12,7 +12,7 @@ A::A(int v4, int v6)
 
 A::~A()
 {
-    spdlog::debug("~A()");
+    //spdlog::debug("~A()");
 }
 
 std::string A::mf_const(double const a, int b) const
@@ -34,7 +34,7 @@ void A::printB()
 {
     if (b)
     {
-        spdlog::debug("{}", b->data);
+        spdlog::debug("{}", b->data0);
     }
     else
     {

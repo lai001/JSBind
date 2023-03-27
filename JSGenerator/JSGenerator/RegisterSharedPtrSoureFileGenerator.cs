@@ -4,15 +4,13 @@ using System.Collections.Generic;
 
 namespace JSGenerator
 {
-    class RegisterSharedPtrSoureFileGenerator
+    class RegisterSharedPtrSoureFileGenerator : IRegister
     {
         private ASTContext ctx;
         private Class @class;
-        private string outputPath;
 
-        public RegisterSharedPtrSoureFileGenerator(ASTContext ctx, Class @class, string outputPath)
+        public RegisterSharedPtrSoureFileGenerator(ASTContext ctx, Class @class)
         {
-            this.outputPath = outputPath;
             this.@class = @class;
             this.ctx = ctx;
         }
@@ -23,7 +21,7 @@ namespace JSGenerator
             Func<string> retrieveInstance = delegate
             {
                 return $@"
-JSWrapperSharedPtr{className}* wrapper = reinterpret_cast<JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, js_SharedPtr{className}_class_id));
+JSWrapperSharedPtr{className}* wrapper = reinterpret_cast<JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, JS_GetClassID(this_val, nullptr)));
 std::shared_ptr<{className}> instance = wrapper->instance;";
             };
             Func<string> getRawPtrFunc = delegate
@@ -47,7 +45,7 @@ JSClassID get_js_SharedPtr{className}_class_id()
 
 {getFinalizerContent()}
 {getCtorContent()}
-{MemberFunctionGenerator.get(@class, getSupportMemberMethod(), retrieveInstance, getRawPtrFunc)}
+{MemberFunctionGenerator.get(@class, RegisterSourceFileGenerator.getSupportMemberMethod(@class), retrieveInstance, getRawPtrFunc)}
 {getGetPropContent()}
 {getSetPropContent()}
 {getClassDefContent()}
@@ -61,9 +59,12 @@ JSClassID get_js_SharedPtr{className}_class_id()
         {
             string className = @class.Name;
             string headerFilePath = @class.TranslationUnit.IncludePath;
+            string vectorInclude = RegisterSourceFileGenerator.getVectorIncludeContent(@class);
+
             string ret = @$"
 #include ""SharedPtrClass{className}Register.h""
 #include ""Class{className}Register.h""
+{vectorInclude}
 ";
             return ret;
         }
@@ -71,8 +72,11 @@ JSClassID get_js_SharedPtr{className}_class_id()
         public string getCtorContent()
         {
             string className = @class.Name;
-            string c = "";
-            List<Method> methods = getSupportContructorMethod();
+            string newContent = "";
+            
+            string vectorVarContent = RegisterSourceFileGenerator.getVectorVarContent(@class);
+
+            List<Method> methods = RegisterSourceFileGenerator.getSupportContructorMethod(@class);
 
             for (int i = 0; i < methods.Count; i++)
             {
@@ -87,7 +91,7 @@ JSClassID get_js_SharedPtr{className}_class_id()
                     }
 
                     string vlist = MemberFunctionGenerator.getVlist(method.Parameters.Count);
-                    c += $@"
+                    newContent += $@"
 if (argc == {method.Parameters.Count})
 {{
     {parametersCodeLine}
@@ -96,7 +100,7 @@ if (argc == {method.Parameters.Count})
                 }
                 else
                 {
-                    c += $@"
+                    newContent += $@"
 if (argc == {method.Parameters.Count})
 {{
     instance = std::make_shared<{className}>();
@@ -108,7 +112,7 @@ if (argc == {method.Parameters.Count})
 static JSValue js_SharedPtr{className}_ctor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst* argv)
 {{
     std::shared_ptr<{className}> instance = nullptr;
-    {c}
+    {newContent}
 	JSWrapperSharedPtr{className}* wrapper = new JSWrapperSharedPtr{className}();
 	wrapper->instance = instance;
     assert(instance);
@@ -120,6 +124,7 @@ static JSValue js_SharedPtr{className}_ctor(JSContext* ctx, JSValueConst new_tar
     assert(JS_IsException(object) == false);
     JS_SetOpaque(object, wrapper{className});
     JS_SetPropertyStr(ctx, classObject, ""@rawPtr"", object);
+    {vectorVarContent}
     return classObject;
 }}";
             return ret;
@@ -177,7 +182,7 @@ int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def)
                 propFunc += $@"js_cgetset_magic_def(""{name}"", js_SharedPtr{className}_get_prop, js_SharedPtr{className}_set_prop, {i})," + "\n";
             }
 
-            List<Method> supportMemberMethods = getSupportMemberMethod();
+            List<Method> supportMemberMethods = RegisterSourceFileGenerator.getSupportMemberMethod(@class);
             for (int i = 0; i < supportMemberMethods.Count; i++)
             {
                 Method method = supportMemberMethods[i];
@@ -193,12 +198,12 @@ static JSCFunctionListEntry js_class_proto_funcs[] = {{
     {memberFunc}
     js_cfunc_def(""_get"", 0, JS{className}MemberFunction::_get),
 }};
-SetModuleExportHelper(ctx, def, js_SharedPtr{className}_class(), &js_SharedPtr{className}_class_id, js_SharedPtr{className}_ctor, 2, js_class_proto_funcs, sizeof(js_class_proto_funcs) / sizeof((js_class_proto_funcs)[0]));
+SetModuleExportHelper(ctx, def, js_SharedPtr{className}_class(), &js_SharedPtr{className}_class_id, js_SharedPtr{className}_ctor, 2, js_class_proto_funcs, sizeof(js_class_proto_funcs) / sizeof((js_class_proto_funcs)[0]), nullptr);
 ";
             }
             else
             {
-                content = $@"SetModuleExportHelper(ctx, def, js_SharedPtr{className}_class(), js_SharedPtr{className}_class_id, js_SharedPtr{className}_ctor, 2, nullptr, 0);";
+                content = $@"SetModuleExportHelper(ctx, def, js_SharedPtr{className}_class(), js_SharedPtr{className}_class_id, js_SharedPtr{className}_ctor, 2, nullptr, 0, nullptr);";
             }
 
             string ret = $@"
@@ -223,7 +228,7 @@ int js_SharedPtr{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def)
             string ret = $@"
 static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst this_val, int magic)
 {{
-	JSWrapperSharedPtr{className}* wrapper = reinterpret_cast< JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, js_SharedPtr{className}_class_id));
+	JSWrapperSharedPtr{className}* wrapper = reinterpret_cast< JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, JS_GetClassID(this_val, nullptr)));
 	std::shared_ptr<{className}> instance = wrapper->instance;
     {content}
 	return JS_EXCEPTION;
@@ -304,6 +309,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
 
         public string getGetPropMagicContent(Field field, int magic)
         {
+            return RegisterSourceFileGenerator.getGetPropMagicContent(field, magic);
             string content = "";
             if (field.Type is PointerType)
             {
@@ -348,7 +354,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             string ret = $@"
 static JSValue js_SharedPtr{className}_set_prop(JSContext* ctx, JSValueConst this_val, JSValue val, int magic)
 {{
-	JSWrapperSharedPtr{className}* wrapper = reinterpret_cast<JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, js_SharedPtr{className}_class_id));
+	JSWrapperSharedPtr{className}* wrapper = reinterpret_cast<JSWrapperSharedPtr{className}*>(JS_GetOpaque2(ctx, this_val, JS_GetClassID(this_val, nullptr)));
     std::shared_ptr<{className}> instance = wrapper->instance;
     {content}
 	return JS_EXCEPTION;
@@ -359,6 +365,7 @@ static JSValue js_SharedPtr{className}_set_prop(JSContext* ctx, JSValueConst thi
 
         public string getSetPropMagicContent(Field field, int magic)
         {
+            return RegisterSourceFileGenerator.getSetPropMagicContent(field, magic);
             string content = "";
 
             if (field.Type is PointerType)
@@ -422,21 +429,21 @@ return JS_UNDEFINED;";
             return ret;
         }
 
-        public string getRegisterClassCallerExternContent()
-        {
-            string className = @class.Name;
-            string ret = $@"
-extern int js_SharedPtr{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def);
-extern int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def);";
-            return ret;
-        }
+//        public string getRegisterClassCallerExternContent()
+//        {
+//            string className = @class.Name;
+//            string ret = $@"
+//extern int js_SharedPtr{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def);
+//extern int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def);";
+//            return ret;
+//        }
 
-        public string[] getRegisterClassCallerContent()
-        {
-            string className = @class.Name;
-            string[] array = { $@"js_SharedPtr{className}_SetModuleExport(ctx, def);", $@"js_SharedPtr{className}_AddModuleExport(ctx, def);" };
-            return array;
-        }
+//        public string[] getRegisterClassCallerContent()
+//        {
+//            string className = @class.Name;
+//            string[] array = { $@"js_SharedPtr{className}_SetModuleExport(ctx, def);", $@"js_SharedPtr{className}_AddModuleExport(ctx, def);" };
+//            return array;
+//        }
 
         private string getFullClassName()
         {
@@ -450,37 +457,37 @@ extern int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* 
             return full;
         }
 
-        List<Method> getSupportContructorMethod()
-        {
-            List<Method> methods = new List<Method>();
-            foreach (Method constructor in @class.Constructors)
-            {
-                if (constructor.IsConstructor &&
-                    constructor.IsDeleted == false &&
-                    constructor.IsCopyConstructor == false &&
-                    constructor.IsMoveConstructor == false)
-                {
-                    methods.Add(constructor);
-                }
-            }
-            return methods;
-        }
+        //List<Method> getSupportContructorMethod()
+        //{
+        //    List<Method> methods = new List<Method>();
+        //    foreach (Method constructor in @class.Constructors)
+        //    {
+        //        if (constructor.IsConstructor &&
+        //            constructor.IsDeleted == false &&
+        //            constructor.IsCopyConstructor == false &&
+        //            constructor.IsMoveConstructor == false)
+        //        {
+        //            methods.Add(constructor);
+        //        }
+        //    }
+        //    return methods;
+        //}
 
-        private List<Method> getSupportMemberMethod()
-        {
-            List<Method> methods = new List<Method>();
-            foreach (Method memberFunction in @class.Methods)
-            {
-                if (memberFunction.IsConstructor == false
-                    && memberFunction.IsDestructor == false
-                    && memberFunction.IsCopyConstructor == false
-                    && memberFunction.Kind != CXXMethodKind.Operator)
-                {
-                    methods.Add(memberFunction);
-                }
-            }
-            return methods;
-        }
+        //private List<Method> getSupportMemberMethod()
+        //{
+        //    List<Method> methods = new List<Method>();
+        //    foreach (Method memberFunction in @class.Methods)
+        //    {
+        //        if (memberFunction.IsConstructor == false
+        //            && memberFunction.IsDestructor == false
+        //            && memberFunction.IsCopyConstructor == false
+        //            && memberFunction.Kind != CXXMethodKind.Operator)
+        //        {
+        //            methods.Add(memberFunction);
+        //        }
+        //    }
+        //    return methods;
+        //}
 
         private string getHeaderFileContent()
         {
@@ -514,15 +521,26 @@ struct JSWrapperSharedPtr{className}
 }};";
         }
 
-        public void save()
+        public void save(string outputFolderPath)
         {
-            System.IO.Directory.CreateDirectory(outputPath);
+            System.IO.Directory.CreateDirectory(outputFolderPath);
 
             string className = @class.Name;
             string fileName = $"SharedPtrClass{className}Register.cpp";
             string headerFileName = $"SharedPtrClass{className}Register.h";
-            System.IO.File.WriteAllText(outputPath + "/" + fileName, getSourceFileContent());
-            System.IO.File.WriteAllText(outputPath + "/" + headerFileName, getHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + fileName, getSourceFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + headerFileName, getHeaderFileContent());
+        }
+
+        Tuple<string, string, string> IRegister.getRegisterClassCallerContent()
+        {
+            string className = @class.Name;
+            Tuple<string, string, string> tuple = new Tuple<string, string, string>($@"
+extern int js_SharedPtr{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def);
+extern int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def);",
+$@"js_SharedPtr{className}_SetModuleExport(ctx, def);",
+$@"js_SharedPtr{className}_AddModuleExport(ctx, def);");
+            return tuple;
         }
     }
 }

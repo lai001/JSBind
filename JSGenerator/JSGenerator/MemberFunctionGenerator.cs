@@ -53,7 +53,7 @@ namespace JSGenerator
             string add = "";
             foreach (Method method in methods)
             {
-                content += getMemberFunctionContent(@class, method, retrieveInstance) + "\n";
+                content += getMemberFunctionContent(@class, method, retrieveInstance);
             }
             if (addtional != null)
             {
@@ -100,7 +100,8 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
     {parametersCodeLine}
     {getMethodCallContent(method, returnTypeInfo, vlist)}
 	{getReturnCodeContent(returnTypeInfo)}
-}}";
+}}
+";
             return ret;
         }
 
@@ -168,6 +169,11 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
             else if (type == "double" || type == "float")
             {
                 c = $@"verify(JS_ToFloat64(ctx, &v{index}, argv[{index}]) >= 0);";
+            }
+            else if (type == "ulong")
+            {
+                type = "int64_t";
+                c = $@"verify(JS_ToInt64(ctx, &v{index}, argv[{index}]) >= 0);";
             }
 
             string ret = $@"

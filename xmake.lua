@@ -1,4 +1,5 @@
 add_requires("spdlog")
+includes("ThirdParty/Foundation/Foundation")
 
 local js_defines = {"CONFIG_BIGNUM", "JS_STRICT_NAN_BOXING"}
         
@@ -30,6 +31,9 @@ task("project_setup")
         if os.exists("./ThirdParty/quickjspp") == false then
             git.clone("https://github.com/c-smile/quickjspp.git", {depth = 1, branch = "master", outputdir = "./ThirdParty/quickjspp"})
         end
+        if os.exists("./ThirdParty/Foundation") == false then
+            git.clone("https://github.com/lai001/Foundation.git", {depth = 1, branch = "main", outputdir = "./ThirdParty/Foundation"})
+        end        
         local program = find_program("cmake")
         if program == "cmake" then
             if os.exists("./JSGenerator/build") == false then
@@ -60,10 +64,24 @@ task("clang_format")
     on_run(function ()
         import("lib.detect.find_program")
         local program = find_program("clang-format")
+        local function clangformatFiles(folderPath) 
+            local style = "Microsoft";
+            -- local style = "LLVM";
+            if #os.files(path.join(folderPath, "*.hpp")) > 0 then
+                os.execv(program, {"-style=" .. style, "-i", path.join(folderPath, "*.hpp")})
+            end
+            if #os.files(path.join(folderPath, "*.h")) > 0 then
+                os.execv(program, {"-style=" .. style, "-i", path.join(folderPath, "*.h")})
+            end
+            if #os.files(path.join(folderPath, "*.cpp")) > 0 then
+                os.execv(program, {"-style=" .. style, "-i", path.join(folderPath, "*.cpp")})
+            end    
+        end        
         if program == "clang-format" and os.exists("JSGenerator/build/Register") then 
-            os.execv(program, {"-style=Microsoft", "-i", 
-            path.join(os.scriptdir(), "JSGenerator/build/Register/*.cpp"),
-            path.join(os.scriptdir(), "JSGenerator/build/Register/*.h") })
+            clangformatFiles("JSGenerator/build/Register")
+            clangformatFiles("JSGenerator/build/Debug/Register")
+            clangformatFiles("JSGenerator/build/Release/Register")
+            clangformatFiles("Source")
         end
     end)
 
@@ -80,17 +98,16 @@ task("generate_binding")
         import("core.project.task")
         import("core.base.json")
         local includeDirs = map({
-            "Source",
+            "Data",
         }, function (item)
             return path.join(os.scriptdir(), item)
         end)
-        local headers = map({
-            "A.h",
-            "B.h"
-        }, function (item)
-            return path.join(os.scriptdir(), "Source", item)
+        local headers = map(os.files("Source/Data/*.h"), function (item)
+            return path.join(os.scriptdir(), item)
         end)
-        local class_name = {"A", "B"}
+        local class_name = map(os.files("Source/Data/*.h"), function (item) 
+            return path.basename(item)
+        end)
         json.savefile(".xmake/Generator.json", {
             IncludeDirs = includeDirs,
             Headers= headers,
@@ -99,11 +116,11 @@ task("generate_binding")
         local program = find_program("cmake")
         if program == "cmake" then
             if os.exists("./JSGenerator/build") then
-                os.execv(program, {"--build", "./JSGenerator/build"})
+                os.execv(program, {"--build", "./JSGenerator/build", "--config Release"})
             end
         end  
         if os.exists("./JSGenerator/build") then
-            chdir(os.cd, "./JSGenerator/build/Debug", function () 
+            chdir(os.cd, "./JSGenerator/build/Release", function () 
                 os.execv("./JSGenerator.exe", { path.join(os.scriptdir(), ".xmake/Generator.json") })
             end)
         end     
@@ -199,13 +216,15 @@ target("JSBind")
     set_runargs(path.join(os.scriptdir(), "Scripts/main.js"))
     add_languages("c++17", "c11")
     add_rules("mode.debug", "mode.release")
-    add_files("Source/*.cpp")
-    add_headerfiles("Source/*.h")
-    add_files("JSGenerator/build/Register/*.cpp")
-    add_headerfiles("JSGenerator/build/Register/*.h")
-    add_includedirs("JSGenerator/build/Register")
+    add_files("Source/**.cpp")
+    add_headerfiles("Source/**.h")
     add_includedirs("Source")
+    local folder = "JSGenerator/build/Release/Register"
+    add_files(folder .. "/*.cpp")
+    add_headerfiles(folder .. "/*.h")
+    add_includedirs(folder)
     add_deps("quickjs")
+    add_deps("Foundation")
     add_packages("spdlog")
     add_defines(js_defines)
 

@@ -10,24 +10,51 @@ namespace JSGenerator
 
         public JSClassRegister(ASTContext ctx, List<string> classNames)
         {
-            string ouputPath = "../Register";
-            new HelperGenerator(ouputPath).save();
             this.ctx = ctx;
             List<Class> classes = findClasses(classNames);
+            FindVectorType.Instance.findAndCacheAllTemplateSpecializationTypes(classes);
+            VectorGenerator vectorGenerator = new VectorGenerator(classes);
             List<RegisterSourceFileGenerator> registerSourceFileGenerators = new List<RegisterSourceFileGenerator>();
+            List<CPPVectorRegisterGenerator> cppVectorRegisterGenerators = new List<CPPVectorRegisterGenerator>();
             List<RegisterSharedPtrSoureFileGenerator> registerSharedPtrSoureFileGenerators = new List<RegisterSharedPtrSoureFileGenerator>();
-            RegisterAllClassFileGenerator registerAllClassFileGenerator = new RegisterAllClassFileGenerator(registerSourceFileGenerators, registerSharedPtrSoureFileGenerators, ouputPath);
+
             foreach (Class @class in classes)
             {
-                RegisterSourceFileGenerator registerSourceFileGenerator = new RegisterSourceFileGenerator(ctx, @class, ouputPath);
-                registerSourceFileGenerator.save();
+                RegisterSourceFileGenerator registerSourceFileGenerator = new RegisterSourceFileGenerator(ctx, @class);
                 registerSourceFileGenerators.Add(registerSourceFileGenerator);
-
-                RegisterSharedPtrSoureFileGenerator registerSharedPtrSoureFileGenerator = new RegisterSharedPtrSoureFileGenerator(ctx, @class, ouputPath);
-                registerSharedPtrSoureFileGenerator.save();
+                RegisterSharedPtrSoureFileGenerator registerSharedPtrSoureFileGenerator = new RegisterSharedPtrSoureFileGenerator(ctx, @class);
                 registerSharedPtrSoureFileGenerators.Add(registerSharedPtrSoureFileGenerator);
             }
-            registerAllClassFileGenerator.save();
+            
+            foreach (TemplateSpecializationType templateSpecializationType in FindVectorType.Instance.getTemplateSpecializationTypes().Values)
+            {
+                CPPVectorRegisterGenerator cppVectorRegisterGenerator = new CPPVectorRegisterGenerator(templateSpecializationType);
+                cppVectorRegisterGenerators.Add(cppVectorRegisterGenerator);
+            }
+
+            List<IRegister> registers = new List<IRegister>();
+            registers.AddRange(registerSourceFileGenerators);
+            registers.AddRange(cppVectorRegisterGenerators);
+            registers.AddRange(registerSharedPtrSoureFileGenerators);
+            RegisterAllClassFileGenerator registerAllClassFileGenerator = new RegisterAllClassFileGenerator(registers);
+
+#if (DEBUG)
+            const string outputFolderPath = "../Debug/Register";
+#else
+            const string outputFolderPath = "../Release/Register";
+#endif
+            vectorGenerator.save(outputFolderPath);
+            foreach (CPPVectorRegisterGenerator cppVectorRegisterGenerator in cppVectorRegisterGenerators)
+            {
+                cppVectorRegisterGenerator.save(outputFolderPath);
+            }
+            for (int i = 0; i < classes.Count; i++)
+            {
+                registerSourceFileGenerators[i].save(outputFolderPath);
+                registerSharedPtrSoureFileGenerators[i].save(outputFolderPath);
+            }
+            registerAllClassFileGenerator.save(outputFolderPath);
+            new HelperGenerator().save(outputFolderPath);
         }
 
         private List<Class> findClasses(List<string> classNames)
