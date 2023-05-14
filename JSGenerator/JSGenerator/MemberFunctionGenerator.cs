@@ -1,7 +1,6 @@
 ﻿using CppSharp.AST;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace JSGenerator
 {
@@ -46,14 +45,14 @@ namespace JSGenerator
             }
         }
 
-        public static string get(Class @class, List<Method> methods, Func<string> retrieveInstance, Func<string> addtional)
+        public static string Get(Class @class, List<Method> methods, Func<string> retrieveInstance, Func<string> addtional)
         {
             string className = @class.Name;
             string content = "";
             string add = "";
             foreach (Method method in methods)
             {
-                content += getMemberFunctionContent(@class, method, retrieveInstance);
+                content += GetMemberFunctionContent(@class, method, retrieveInstance);
             }
             if (addtional != null)
             {
@@ -68,7 +67,7 @@ struct JS{className}MemberFunction
             return ret;
         }
 
-        private static string getMemberFunctionContent(Class @class, Method method, Func<string> retrieveInstance)
+        private static string GetMemberFunctionContent(Class @class, Method method, Func<string> retrieveInstance)
         {
             string className = @class.Name;
             string methodName = method.LogicalOriginalName;
@@ -83,12 +82,12 @@ struct JS{className}MemberFunction
                     parameters.Add(parameter);
                 }
             }
-            string vlist = getVlist(parameters.Count);
+            string vlist = GetVlist(parameters.Count);
 
             for (int i = 0; i < parameters.Count; i++)
             {
                 Parameter parameter = parameters[i];
-                parametersCodeLine += getParameterContent(parameter, i);
+                parametersCodeLine += GetParameterContent(parameter, i);
             }
 
             string ret = $@"
@@ -98,14 +97,14 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
 	assert(instance);
     assert(argc == {parameters.Count});
     {parametersCodeLine}
-    {getMethodCallContent(method, returnTypeInfo, vlist)}
-	{getReturnCodeContent(returnTypeInfo)}
+    {GetMethodCallContent(method, returnTypeInfo, vlist)}
+	{GetReturnCodeContent(returnTypeInfo)}
 }}
 ";
             return ret;
         }
 
-        public static string getVlist(int parametersCount, int offset = 0)
+        public static string GetVlist(int parametersCount, int offset = 0)
         {
             string vlist = "";
             for (int i = 0; i < parametersCount; i++)
@@ -119,7 +118,7 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
             return vlist;
         }
 
-        private static string getReturnCodeContent(ReturnTypeInfo returnTypeInfo)
+        private static string GetReturnCodeContent(ReturnTypeInfo returnTypeInfo)
         {
             if (returnTypeInfo.namespaceReturnType == "std::string")
             {
@@ -141,7 +140,7 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
             return "return JS_EXCEPTION;";
         }
 
-        private static string getMethodCallContent(Method method, ReturnTypeInfo returnTypeInfo, string vlist)
+        private static string GetMethodCallContent(Method method, ReturnTypeInfo returnTypeInfo, string vlist)
         {
             string methodName = method.LogicalOriginalName;
             string ret = "";
@@ -156,7 +155,7 @@ static JSValue {methodName}(JSContext* ctx, JSValueConst this_val, int argc, JSV
             return ret;
         }
 
-        public static string getParameterContent(Parameter parameter, int index)
+        public static string GetParameterContent(Parameter parameter, int index)
         {
             string type = parameter.Type.ToString();
             string c = "";

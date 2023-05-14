@@ -5,28 +5,24 @@ namespace JSGenerator
 {
     class RegisterAllClassFileGenerator
     {
-        //private List<RegisterSourceFileGenerator> registerSourceFileGenerators;
-        //private List<RegisterSharedPtrSoureFileGenerator> registerSharedPtrSoureFileGenerators;
-        private List<IRegister> registers;
+        private readonly List<IRegister> registers;
 
         public RegisterAllClassFileGenerator(List<IRegister> registers)
         {
-            //this.registerSourceFileGenerators = registerSourceFileGenerators;
-            //this.registerSharedPtrSoureFileGenerators = registerSharedPtrSoureFileGenerators;
             this.registers = registers;
         }
 
-        private string getHeaderFileName()
+        private string GetHeaderFileName()
         {
             return "AllClassRegister.h";
         }
 
-        private string getSourceFileName()
+        private string GetSourceFileName()
         {
             return "AllClassRegister.cpp";
         }
 
-        private string getHeaderFileContent()
+        private string GetHeaderFileContent()
         {
             string content =
 @$"#pragma once
@@ -49,32 +45,13 @@ void registerAllClass(JSContext* ctx, const char* moduleName, AppendSetAllModule
 
             foreach (IRegister register in registers)
             {
-                Tuple<string, string, string> values = register.getRegisterClassCallerContent();
+                Tuple<string, string, string> values = register.GetRegisterClassCallerContent();
                 a += values.Item1 + "\n";
                 b += values.Item2 + "\n";
                 c += values.Item3 + "\n";
-                //string[] s = registerSourceFileGenerator.getRegisterClassCallerContent();
-                //b += s[0] + "\n";
-                //c += s[1] + "\n";
             }
 
-            //foreach (RegisterSourceFileGenerator registerSourceFileGenerator in registerSourceFileGenerators)
-            //{
-            //    a += registerSourceFileGenerator.getRegisterClassCallerExternContent() + "\n";
-            //    string[] s = registerSourceFileGenerator.getRegisterClassCallerContent();
-            //    b += s[0] + "\n";
-            //    c += s[1] + "\n";
-            //}
-
-            //foreach (RegisterSharedPtrSoureFileGenerator registerSharedPtrSoureFileGenerator in registerSharedPtrSoureFileGenerators)
-            //{
-            //    a += registerSharedPtrSoureFileGenerator.getRegisterClassCallerExternContent() + "\n";
-            //    string[] s = registerSharedPtrSoureFileGenerator.getRegisterClassCallerContent();
-            //    b += s[0] + "\n";
-            //    c += s[1] + "\n";
-            //}
-
-            string content = @$"#include ""{getHeaderFileName()}""
+            string content = @$"#include ""{GetHeaderFileName()}""
 {a}
 static AppendSetAllModuleExport appendSetAllModuleExport = nullptr;
 
@@ -114,12 +91,12 @@ void registerAllClass(JSContext* ctx, const char* moduleName, AppendSetAllModule
             return content;
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
 
-            System.IO.File.WriteAllText(outputFolderPath + "/" + getHeaderFileName(), getHeaderFileContent());
-            System.IO.File.WriteAllText(outputFolderPath + "/" + getSourceFileName(), getSourceFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + GetHeaderFileName(), GetHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + GetSourceFileName(), getSourceFileContent());
         }
 
     }

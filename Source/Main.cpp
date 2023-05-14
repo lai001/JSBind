@@ -64,6 +64,35 @@ void pushSharedValue(JSContext *ctx, char *name = "g_sharedptr_b", std::shared_p
     JS_FreeValue(ctx, globalObject);
 }
 
+int fib(int n)
+{
+    if (n <= 0)
+    {
+        return 0;
+    }
+    if (n < 3)
+        return 1;
+    return fib(n - 1) + fib(n - 2);
+}
+
+void test()
+{
+    std::function<long long()> getTime = []() {
+        std::chrono::steady_clock::time_point now = std::chrono::high_resolution_clock::now();
+        long long currentMilliseconds =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        return currentMilliseconds;
+    };
+    const long long time = getTime();
+    int a = 0;
+    for (int i = 0; i < 45; i++)
+    {
+        a = fib(i);
+    }
+    std::cout << getTime() - time << std::endl;
+    std::cout << a << std::endl;
+}
+
 int main(int argc, char **argv)
 {
     assert(argc > 1);

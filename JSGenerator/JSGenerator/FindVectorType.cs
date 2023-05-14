@@ -1,5 +1,3 @@
-
-
 using CppSharp.AST;
 using System;
 using System.Collections.Generic;
@@ -27,24 +25,24 @@ namespace JSGenerator
 
         }
 
-        public Dictionary<string, TemplateSpecializationType> getTemplateSpecializationTypes()
+        public Dictionary<string, TemplateSpecializationType> GetTemplateSpecializationTypes()
         {
             return templateSpecializationTypes;
         }
 
-        public bool isStdVector(TemplateSpecializationType templateSpecializationType)
+        public bool IsStdVector(TemplateSpecializationType templateSpecializationType)
         {
             return templateSpecializationType.Template.LogicalOriginalName == "vector" &&
                 templateSpecializationType.Template.Namespace.ToString() == "std";
         }
 
-        public void findAndCacheAllTemplateSpecializationTypes(List<Class> classes)
+        public void FindAndCacheAllTemplateSpecializationTypes(List<Class> classes)
         {
             Dictionary<string, TemplateSpecializationType> templateSpecializationTypes = new Dictionary<string, TemplateSpecializationType>();
             for (int i = 0; i < classes.Count; i++)
             {
                 Class @class = classes[i];
-                foreach (var (key, value) in findTemplateSpecializationTypes(@class))
+                foreach (var (key, value) in FindTemplateSpecializationTypes(@class))
                 {
                     templateSpecializationTypes.TryAdd(key, value);
                 }
@@ -52,15 +50,15 @@ namespace JSGenerator
             this.templateSpecializationTypes = templateSpecializationTypes;
         }
 
-        public Dictionary<string, TemplateSpecializationType> findTemplateSpecializationTypes(Class @class)
+        public Dictionary<string, TemplateSpecializationType> FindTemplateSpecializationTypes(Class @class)
         {
             List<Method> methods = new List<Method>();
             List<Field> fields = new List<Field>();
 
             Dictionary<string, TemplateSpecializationType> templateSpecializationTypes = new Dictionary<string, TemplateSpecializationType>();
 
-            List<Method> contructorMethods = RegisterSourceFileGenerator.getSupportContructorMethod(@class);
-            List<Method> memberMethods = RegisterSourceFileGenerator.getSupportMemberMethod(@class);
+            List<Method> contructorMethods = RegisterSourceFileGenerator.GetSupportContructorMethod(@class);
+            List<Method> memberMethods = RegisterSourceFileGenerator.GetSupportMemberMethod(@class);
             methods.AddRange(contructorMethods);
             methods.AddRange(memberMethods);
             fields.AddRange(@class.Fields);
@@ -76,7 +74,7 @@ namespace JSGenerator
                     if (parameter.Type is TemplateSpecializationType)
                     {
                         TemplateSpecializationType templateSpecializationType = parameter.Type as TemplateSpecializationType;
-                        if (isStdVector(templateSpecializationType))
+                        if (IsStdVector(templateSpecializationType))
                         {
                             templateSpecializationTypes.TryAdd($"{templateSpecializationType}", templateSpecializationType);
                         }
@@ -87,7 +85,7 @@ namespace JSGenerator
                         if (pointer.Pointee is TemplateSpecializationType)
                         {
                             TemplateSpecializationType templateSpecializationType = pointer.Pointee as TemplateSpecializationType;
-                            if (isStdVector(templateSpecializationType))
+                            if (IsStdVector(templateSpecializationType))
                             {
                                 templateSpecializationTypes.TryAdd($"{templateSpecializationType}", templateSpecializationType);
                             }
@@ -103,7 +101,7 @@ namespace JSGenerator
                 if (field.Type is TemplateSpecializationType)
                 {
                     TemplateSpecializationType templateSpecializationType = field.Type as TemplateSpecializationType;
-                    if (isStdVector(templateSpecializationType))
+                    if (IsStdVector(templateSpecializationType))
                     {
                         templateSpecializationTypes.TryAdd($"{templateSpecializationType}", templateSpecializationType);
                     }

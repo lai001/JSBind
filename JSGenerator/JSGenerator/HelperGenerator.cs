@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace JSGenerator
+﻿namespace JSGenerator
 {
     class HelperGenerator
     {
@@ -10,7 +6,7 @@ namespace JSGenerator
         { 
         }
 
-        private string getH()
+        private string GetHeaderFileContent()
         {
             return $@"
 #pragma once
@@ -52,7 +48,7 @@ int SetModuleExportHelper(JSContext* ctx, JSModuleDef* def, const JSClassDef* cl
 JSValue NewObjectProtoClass(JSContext* ctx, JSClassID class_id, JSValueConst new_target, void* userData);";
         }
 
-        private string getS()
+        private string GetSourceFileContent()
         {
             return $@"
 #include ""_QuickjsHelper.h""
@@ -156,12 +152,12 @@ JSValue NewObjectProtoClass(JSContext* ctx, JSClassID class_id, JSValueConst new
 ";
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
 
-            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.h", getH());
-            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.cpp", getS());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.h", GetHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + "_QuickjsHelper.cpp", GetSourceFileContent());
         }
     }
 }

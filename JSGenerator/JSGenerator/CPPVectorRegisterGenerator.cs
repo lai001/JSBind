@@ -5,30 +5,30 @@ namespace JSGenerator
 {
     class CPPVectorRegisterGenerator : IRegister
     {
-        private TemplateSpecializationType templateSpecializationType;
+        private readonly TemplateSpecializationType templateSpecializationType;
 
         public CPPVectorRegisterGenerator(TemplateSpecializationType templateSpecializationType)
         {
             this.templateSpecializationType = templateSpecializationType;
         }
 
-        public static string getIncludeFileName(TemplateSpecializationType templateSpecializationType)
+        public static string GetIncludeFileName(TemplateSpecializationType templateSpecializationType)
         {
             string typeName = templateSpecializationType.Arguments[0].ToString();
-            return getHeaderFileName(typeName);
+            return GetHeaderFileName(typeName);
         }
 
-        static string getHeaderFileName(string typeName)
+        public static string GetHeaderFileName(string typeName)
         {
             return $@"ClassCPPVectorRegister_{typeName}.h";
         }
 
-        string getSourceFileName(string typeName)
+        public static string GetSourceFileName(string typeName)
         {
             return $@"ClassCPPVectorRegister_{typeName}.cpp";
         }
 
-        string getHeaderFileContent()
+        private string GetHeaderFileContent()
         {
             TemplateArgument templateArgument = templateSpecializationType.Arguments[0];
             string typeName = templateArgument.Type.ToString();
@@ -166,15 +166,15 @@ int js_CPPVector_{typeName}_AddModuleExport(JSContext *ctx, JSModuleDef *def)
             return ret;
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
             string typeName = templateSpecializationType.Arguments[0].ToString();
-            System.IO.File.WriteAllText(outputFolderPath + "/" + getHeaderFileName(typeName), getHeaderFileContent());
-            System.IO.File.WriteAllText(outputFolderPath + "/" + getSourceFileName(typeName), getSourceFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + GetHeaderFileName(typeName), GetHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + GetSourceFileName(typeName), getSourceFileContent());
         }
 
-        public Tuple<string, string, string> getRegisterClassCallerContent()
+        public Tuple<string, string, string> GetRegisterClassCallerContent()
         {
             TemplateArgument templateArgument = templateSpecializationType.Arguments[0];
             string typeName = templateArgument.Type.ToString();

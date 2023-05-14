@@ -1,7 +1,10 @@
 ﻿using CppSharp;
 using CppSharp.AST;
 using CppSharp.Generators;
+using CppSharp.Parser;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 
 namespace JSGenerator
@@ -14,43 +17,95 @@ namespace JSGenerator
         public List<string> ClassName { get; set; }
     }
 
-    class Program
+    class SampleLibrary : ILibrary
     {
-        private class SampleLibrary : ILibrary
+        private readonly Config config;
+
+        public SampleLibrary(Config config)
         {
-            private Config config;
+            this.config = config;
+        }
 
-            public SampleLibrary(Config config)
+        private static void CopyFilesRecursively(string sourcePath, string targetPath, bool DryRun)
+        {
+            if (!Directory.Exists(sourcePath))
             {
-                this.config = config;
+                throw new Exception($"{sourcePath} Is not an existing directory on disk");
+            }
+            if (!Directory.Exists(targetPath))
+            {
+                throw new Exception($"{targetPath} Is not an existing directory on disk");
+            }
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                string folder = dirPath.Replace(sourcePath, targetPath);
+                if (!Directory.Exists(folder))
+                {
+                    if (DryRun)
+                    {
+                        Console.WriteLine($"CreateDirectory: {folder}");
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(folder);
+                    }
+                }
             }
 
-            public void Postprocess(Driver driver, ASTContext ctx)
+            foreach (string sourceFilePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
             {
-
-                JSClassRegister luaClassRegister = new JSClassRegister(ctx, config.ClassName);
-            }
-
-            public void Preprocess(Driver driver, ASTContext ctx)
-            {
-            }
-
-            public void Setup(Driver driver)
-            {
-                DriverOptions options = driver.Options;
-                options.GeneratorKind = GeneratorKind.CSharp;
-                options.Quiet = true;
-                options.DryRun = true;
-                Module module = options.AddModule("Sample");
-                module.IncludeDirs.AddRange(config.IncludeDirs);
-                module.Headers.AddRange(config.Headers);
-            }
-
-            public void SetupPasses(Driver driver)
-            {
+                string targetFilePath = sourceFilePath.Replace(sourcePath, targetPath);
+                if (DryRun)
+                {
+                    Console.WriteLine($"Copy Flie {sourceFilePath} To {targetFilePath}");
+                }
+                else
+                {
+                    File.Copy(sourceFilePath, targetFilePath, true);
+                }
             }
         }
 
+        public void Postprocess(Driver driver, ASTContext ctx)
+        {
+            _ = new JSClassRegister(ctx, config.ClassName);
+        }
+
+        public void Preprocess(Driver driver, ASTContext ctx)
+        {
+
+        }
+
+        public void Setup(Driver driver)
+        {
+            DriverOptions options = driver.Options;
+            options.GeneratorKind = GeneratorKind.CSharp;
+            options.Quiet = true;
+            options.DryRun = true;
+            ParserOptions parserOptions = driver.ParserOptions;
+
+            if (!File.Exists(Path.Join(parserOptions.BuiltinsDir, "memory")))
+            {
+                //parserOptions.NoBuiltinIncludes = true;
+                //parserOptions.AddIncludeDirs(@"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include");
+                CopyFilesRecursively(
+                    @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include",
+                    parserOptions.BuiltinsDir,
+                    false);
+            }
+
+            Module module = options.AddModule("Sample");
+            module.IncludeDirs.AddRange(config.IncludeDirs);
+            module.Headers.AddRange(config.Headers);
+        }
+
+        public void SetupPasses(Driver driver)
+        {
+        }
+    }
+
+    class Program
+    {
         static async System.Threading.Tasks.Task Main(string[] args)
         {
             if (args.Length > 0)

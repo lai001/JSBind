@@ -1,5 +1,4 @@
 ﻿using CppSharp.AST;
-using System;
 using System.Collections.Generic;
 
 namespace JSGenerator
@@ -7,37 +6,24 @@ namespace JSGenerator
     class VectorGenerator
     {
 
-        private List<Class> classes;
-
-        //private Dictionary<string, TemplateSpecializationType> templateSpecializationTypes;
+        private readonly List<Class> classes;
 
         public VectorGenerator(List<Class> classes)
         {
             this.classes = classes;
         }
 
-        //public static bool isStdVector(TemplateSpecializationType templateSpecializationType)
-        //{
-        //    return templateSpecializationType.Template.LogicalOriginalName == "vector" &&
-        //        templateSpecializationType.Template.Namespace.ToString() == "std";
-        //}
-
-        //public Dictionary<string, TemplateSpecializationType> getTemplateSpecializationTypes()
-        //{
-        //    return templateSpecializationTypes;
-        //}
-
-        string getHeaderFileName(string typeName)
+        string GetHeaderFileName(string typeName)
         {
             return $@"CPPVector_{typeName}.h";
         }
 
-        string getSourceFileName(string typeName)
+        string GetSourceFileName(string typeName)
         {
             return $@"CPPVector_{typeName}.cpp";
         }
 
-        string getHeaderFileContent(TemplateSpecializationType templateSpecializationType)
+        string GetHeaderFileContent(TemplateSpecializationType templateSpecializationType)
         {
             TemplateArgument templateArgument = templateSpecializationType.Arguments[0];
             string typeName = templateArgument.Type.ToString();
@@ -61,13 +47,13 @@ struct CPPVector_{typeName}
             return ret;
         }
 
-        string getSourceFileContent(TemplateSpecializationType templateSpecializationType)
+        string GetSourceFileContent(TemplateSpecializationType templateSpecializationType)
         {
             TemplateArgument templateArgument = templateSpecializationType.Arguments[0];
             string typeName = templateArgument.Type.ToString();
 
             string ret = $@"
-#include ""{getHeaderFileName(typeName)}""
+#include ""{GetHeaderFileName(typeName)}""
 
 void CPPVector_{typeName}::set(const size_t index, const {typeName}& value)
 {{
@@ -84,16 +70,16 @@ void CPPVector_{typeName}::set(const size_t index, const {typeName}& value)
             return ret;
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
-            Dictionary<string, TemplateSpecializationType> templateSpecializationTypes = FindVectorType.Instance.getTemplateSpecializationTypes();
+            Dictionary<string, TemplateSpecializationType> templateSpecializationTypes = FindVectorType.Instance.GetTemplateSpecializationTypes();
             foreach (KeyValuePair<string, TemplateSpecializationType> keyValuePair in templateSpecializationTypes)
             {
                 TemplateSpecializationType templateSpecializationType = keyValuePair.Value;
                 string typeName = templateSpecializationType.Arguments[0].ToString();
-                System.IO.File.WriteAllText(outputFolderPath + "/" + getHeaderFileName(typeName), getHeaderFileContent(templateSpecializationType));
-                System.IO.File.WriteAllText(outputFolderPath + "/" + getSourceFileName(typeName), getSourceFileContent(templateSpecializationType));
+                System.IO.File.WriteAllText(outputFolderPath + "/" + GetHeaderFileName(typeName), GetHeaderFileContent(templateSpecializationType));
+                System.IO.File.WriteAllText(outputFolderPath + "/" + GetSourceFileName(typeName), GetSourceFileContent(templateSpecializationType));
             }
         }
 

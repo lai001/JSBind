@@ -6,8 +6,8 @@ namespace JSGenerator
 {
     class RegisterSharedPtrSoureFileGenerator : IRegister
     {
-        private ASTContext ctx;
-        private Class @class;
+        private readonly ASTContext ctx;
+        private readonly Class @class;
 
         public RegisterSharedPtrSoureFileGenerator(ASTContext ctx, Class @class)
         {
@@ -15,7 +15,7 @@ namespace JSGenerator
             this.ctx = ctx;
         }
 
-        public string getSourceFileContent()
+        public string GetSourceFileContent()
         {
             string className = @class.Name;
             Func<string> retrieveInstance = delegate
@@ -35,7 +35,7 @@ static JSValue _get(JSContext *ctx, JSValueConst this_val, int argc, JSValueCons
 }}";
             };
             string ret = @$"
-{getIncludeContent()}
+{GetIncludeContent()}
 static JSClassID js_SharedPtr{className}_class_id;
 
 JSClassID get_js_SharedPtr{className}_class_id()
@@ -43,23 +43,23 @@ JSClassID get_js_SharedPtr{className}_class_id()
     return js_SharedPtr{className}_class_id;
 }}
 
-{getFinalizerContent()}
-{getCtorContent()}
-{MemberFunctionGenerator.get(@class, RegisterSourceFileGenerator.getSupportMemberMethod(@class), retrieveInstance, getRawPtrFunc)}
-{getGetPropContent()}
-{getSetPropContent()}
-{getClassDefContent()}
-{getClassSetModuleExportContent()}
-{getClassAddModuleExportContent()}
+{GetFinalizerContent()}
+{GetCtorContent()}
+{MemberFunctionGenerator.Get(@class, RegisterSourceFileGenerator.GetSupportMemberMethod(@class), retrieveInstance, getRawPtrFunc)}
+{GetGetPropContent()}
+{GetSetPropContent()}
+{GetClassDefContent()}
+{GetClassSetModuleExportContent()}
+{GetClassAddModuleExportContent()}
 ";
             return ret;
         }
 
-        public string getIncludeContent()
+        public string GetIncludeContent()
         {
             string className = @class.Name;
             string headerFilePath = @class.TranslationUnit.IncludePath;
-            string vectorInclude = RegisterSourceFileGenerator.getVectorIncludeContent(@class);
+            string vectorInclude = RegisterSourceFileGenerator.GetVectorIncludeContent(@class);
 
             string ret = @$"
 #include ""SharedPtrClass{className}Register.h""
@@ -69,14 +69,14 @@ JSClassID get_js_SharedPtr{className}_class_id()
             return ret;
         }
 
-        public string getCtorContent()
+        public string GetCtorContent()
         {
             string className = @class.Name;
             string newContent = "";
             
-            string vectorVarContent = RegisterSourceFileGenerator.getVectorVarContent(@class);
+            string vectorVarContent = RegisterSourceFileGenerator.GetVectorVarContent(@class);
 
-            List<Method> methods = RegisterSourceFileGenerator.getSupportContructorMethod(@class);
+            List<Method> methods = RegisterSourceFileGenerator.GetSupportContructorMethod(@class);
 
             for (int i = 0; i < methods.Count; i++)
             {
@@ -87,10 +87,10 @@ JSClassID get_js_SharedPtr{className}_class_id()
                     for (int parameterIndex = 0; parameterIndex < method.Parameters.Count; parameterIndex++)
                     {
                         Parameter parameter = method.Parameters[parameterIndex];
-                        parametersCodeLine += MemberFunctionGenerator.getParameterContent(parameter, parameterIndex);
+                        parametersCodeLine += MemberFunctionGenerator.GetParameterContent(parameter, parameterIndex);
                     }
 
-                    string vlist = MemberFunctionGenerator.getVlist(method.Parameters.Count);
+                    string vlist = MemberFunctionGenerator.GetVlist(method.Parameters.Count);
                     newContent += $@"
 if (argc == {method.Parameters.Count})
 {{
@@ -130,7 +130,7 @@ static JSValue js_SharedPtr{className}_ctor(JSContext* ctx, JSValueConst new_tar
             return ret;
         }
 
-        public string getFinalizerContent()
+        public string GetFinalizerContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -145,7 +145,7 @@ static void js_SharedPtr{className}_finalizer(JSRuntime* rt, JSValue val)
             return ret;
         }
 
-        public string getClassDefContent()
+        public string GetClassDefContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -159,7 +159,7 @@ static JSClassDef* js_SharedPtr{className}_class()
             return ret;
         }
 
-        public string getClassAddModuleExportContent()
+        public string GetClassAddModuleExportContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -170,7 +170,7 @@ int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def)
             return ret;
         }
 
-        public string getClassSetModuleExportContent()
+        public string GetClassSetModuleExportContent()
         {
             string className = @class.Name;
             string propFunc = "";
@@ -182,7 +182,7 @@ int js_SharedPtr{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def)
                 propFunc += $@"js_cgetset_magic_def(""{name}"", js_SharedPtr{className}_get_prop, js_SharedPtr{className}_set_prop, {i})," + "\n";
             }
 
-            List<Method> supportMemberMethods = RegisterSourceFileGenerator.getSupportMemberMethod(@class);
+            List<Method> supportMemberMethods = RegisterSourceFileGenerator.GetSupportMemberMethod(@class);
             for (int i = 0; i < supportMemberMethods.Count; i++)
             {
                 Method method = supportMemberMethods[i];
@@ -215,14 +215,14 @@ int js_SharedPtr{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def)
             return ret;
         }
 
-        public string getGetPropContent()
+        public string GetGetPropContent()
         {
             string className = @class.Name;
             string content = "";
             for (int i = 0; i < @class.Fields.Count; i++)
             {
                 Field field = @class.Fields[i];
-                content += getGetPropMagicContent(field, i) + "\n";
+                content += GetGetPropMagicContent(field, i) + "\n";
             }
 
             string ret = $@"
@@ -237,7 +237,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             return ret;
         }
 
-        private static Dictionary<string, string> getNewTypeMap()
+        private static Dictionary<string, string> GetNewTypeMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["std::string"] = "JS_NewString";
@@ -253,7 +253,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             return typeMap;
         }
 
-        private static Dictionary<string, string> getToTypeMap()
+        private static Dictionary<string, string> GetToTypeMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["std::string"] = "JS_ToString";
@@ -269,7 +269,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             return typeMap;
         }
 
-        private static Dictionary<string, string> getTypeDMap()
+        private static Dictionary<string, string> GetTypeDMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["sbyte"] = "int";
@@ -284,7 +284,7 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             return typeMap;
         }
 
-        private static string getNamespaceFieldType(Field field)
+        private static string GetNamespaceFieldType(Field field)
         {
             string @namespace = "";
             if (field.Type is TypedefType)
@@ -307,9 +307,9 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             }
         }
 
-        public string getGetPropMagicContent(Field field, int magic)
+        public string GetGetPropMagicContent(Field field, int magic)
         {
-            return RegisterSourceFileGenerator.getGetPropMagicContent(field, magic);
+            return RegisterSourceFileGenerator.GetGetPropMagicContent(field, magic);
             string content = "";
             if (field.Type is PointerType)
             {
@@ -317,8 +317,8 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             }
             else
             {
-                Dictionary<string, string> typeMap = getNewTypeMap();
-                string fieldType = getNamespaceFieldType(field);
+                Dictionary<string, string> typeMap = GetNewTypeMap();
+                string fieldType = GetNamespaceFieldType(field);
                 string jsFunc = "";
                 string fix = "";
                 if (fieldType == "std::string")
@@ -341,14 +341,14 @@ static JSValue js_SharedPtr{className}_get_prop(JSContext* ctx, JSValueConst thi
             return ret;
         }
 
-        public string getSetPropContent()
+        public string GetSetPropContent()
         {
             string className = @class.Name;
             string content = "";
             for (int i = 0; i < @class.Fields.Count; i++)
             {
                 Field field = @class.Fields[i];
-                content += getSetPropMagicContent(field, i) + "\n";
+                content += GetSetPropMagicContent(field, i) + "\n";
             }
 
             string ret = $@"
@@ -363,9 +363,9 @@ static JSValue js_SharedPtr{className}_set_prop(JSContext* ctx, JSValueConst thi
             return ret;
         }
 
-        public string getSetPropMagicContent(Field field, int magic)
+        public string GetSetPropMagicContent(Field field, int magic)
         {
-            return RegisterSourceFileGenerator.getSetPropMagicContent(field, magic);
+            return RegisterSourceFileGenerator.GetSetPropMagicContent(field, magic);
             string content = "";
 
             if (field.Type is PointerType)
@@ -390,10 +390,10 @@ if (JSWrapper{className}* wrapper{className} = reinterpret_cast<JSWrapper{classN
             }
             else
             {
-                Dictionary<string, string> typeMap = getToTypeMap();
-                Dictionary<string, string> typeDMap = getTypeDMap();
+                Dictionary<string, string> typeMap = GetToTypeMap();
+                Dictionary<string, string> typeDMap = GetTypeDMap();
 
-                string fieldType = getNamespaceFieldType(field);
+                string fieldType = GetNamespaceFieldType(field);
                 string jsFunc = "";
                 string type = "";
                 if (typeMap.ContainsKey(fieldType))
@@ -445,7 +445,7 @@ return JS_UNDEFINED;";
 //            return array;
 //        }
 
-        private string getFullClassName()
+        private string GetFullClassName()
         {
             string full = @class.Name;
             DeclarationContext declarationContext = @class.Namespace;
@@ -489,7 +489,7 @@ return JS_UNDEFINED;";
         //    return methods;
         //}
 
-        private string getHeaderFileContent()
+        private string GetHeaderFileContent()
         {
             string className = @class.Name;
             string headerFilePath = @class.TranslationUnit.IncludePath;
@@ -499,7 +499,7 @@ return JS_UNDEFINED;";
 #include <memory>
 #include ""{headerFilePath}""
 #include ""_QuickjsHelper.h""
-{getJSWrapperContent(className, $@"
+{GetJSWrapperContent(className, $@"
 static inline JSWrapperSharedPtr{className}* UnretainedSetOpaque(JSValue objectClass)
 {{
     JSWrapperSharedPtr{className} * wrapper = new JSWrapperSharedPtr{className}();
@@ -511,7 +511,7 @@ JSClassID get_js_SharedPtr{className}_class_id();
             return ret;
         }
 
-        private string getJSWrapperContent(string className, string content)
+        private string GetJSWrapperContent(string className, string content)
         {
             return $@"
 struct JSWrapperSharedPtr{className}
@@ -521,18 +521,18 @@ struct JSWrapperSharedPtr{className}
 }};";
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
 
             string className = @class.Name;
             string fileName = $"SharedPtrClass{className}Register.cpp";
             string headerFileName = $"SharedPtrClass{className}Register.h";
-            System.IO.File.WriteAllText(outputFolderPath + "/" + fileName, getSourceFileContent());
-            System.IO.File.WriteAllText(outputFolderPath + "/" + headerFileName, getHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + fileName, GetSourceFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + headerFileName, GetHeaderFileContent());
         }
 
-        Tuple<string, string, string> IRegister.getRegisterClassCallerContent()
+        Tuple<string, string, string> IRegister.GetRegisterClassCallerContent()
         {
             string className = @class.Name;
             Tuple<string, string, string> tuple = new Tuple<string, string, string>($@"

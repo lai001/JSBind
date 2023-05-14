@@ -6,13 +6,13 @@ namespace JSGenerator
 {
     class JSClassRegister
     {
-        private ASTContext ctx;
+        private readonly ASTContext ctx;
 
         public JSClassRegister(ASTContext ctx, List<string> classNames)
         {
             this.ctx = ctx;
-            List<Class> classes = findClasses(classNames);
-            FindVectorType.Instance.findAndCacheAllTemplateSpecializationTypes(classes);
+            List<Class> classes = FindClasses(classNames);
+            FindVectorType.Instance.FindAndCacheAllTemplateSpecializationTypes(classes);
             VectorGenerator vectorGenerator = new VectorGenerator(classes);
             List<RegisterSourceFileGenerator> registerSourceFileGenerators = new List<RegisterSourceFileGenerator>();
             List<CPPVectorRegisterGenerator> cppVectorRegisterGenerators = new List<CPPVectorRegisterGenerator>();
@@ -26,7 +26,7 @@ namespace JSGenerator
                 registerSharedPtrSoureFileGenerators.Add(registerSharedPtrSoureFileGenerator);
             }
             
-            foreach (TemplateSpecializationType templateSpecializationType in FindVectorType.Instance.getTemplateSpecializationTypes().Values)
+            foreach (TemplateSpecializationType templateSpecializationType in FindVectorType.Instance.GetTemplateSpecializationTypes().Values)
             {
                 CPPVectorRegisterGenerator cppVectorRegisterGenerator = new CPPVectorRegisterGenerator(templateSpecializationType);
                 cppVectorRegisterGenerators.Add(cppVectorRegisterGenerator);
@@ -43,31 +43,31 @@ namespace JSGenerator
 #else
             const string outputFolderPath = "../Release/Register";
 #endif
-            vectorGenerator.save(outputFolderPath);
+            vectorGenerator.Save(outputFolderPath);
             foreach (CPPVectorRegisterGenerator cppVectorRegisterGenerator in cppVectorRegisterGenerators)
             {
-                cppVectorRegisterGenerator.save(outputFolderPath);
+                cppVectorRegisterGenerator.Save(outputFolderPath);
             }
             for (int i = 0; i < classes.Count; i++)
             {
-                registerSourceFileGenerators[i].save(outputFolderPath);
-                registerSharedPtrSoureFileGenerators[i].save(outputFolderPath);
+                registerSourceFileGenerators[i].Save(outputFolderPath);
+                registerSharedPtrSoureFileGenerators[i].Save(outputFolderPath);
             }
-            registerAllClassFileGenerator.save(outputFolderPath);
-            new HelperGenerator().save(outputFolderPath);
+            registerAllClassFileGenerator.Save(outputFolderPath);
+            new HelperGenerator().Save(outputFolderPath);
         }
 
-        private List<Class> findClasses(List<string> classNames)
+        private List<Class> FindClasses(List<string> classNames)
         {
             List<Class> classes = new List<Class>();
             foreach (string className in classNames)
             {
-                classes.AddRange(findClassE(ctx, className));
+                classes.AddRange(FindClassE(ctx, className));
             }
             return classes;
         }
 
-        private List<Class> findClassE(ASTContext ctx, string name)
+        private List<Class> FindClassE(ASTContext ctx, string name)
         {
             List<Class> classes = new List<Class>();
             Action<DeclarationContext> walk = delegate (DeclarationContext declarationContext) { };

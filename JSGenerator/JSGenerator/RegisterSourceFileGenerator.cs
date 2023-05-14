@@ -6,8 +6,8 @@ namespace JSGenerator
 {
     class RegisterSourceFileGenerator : IRegister
     {
-        private ASTContext ctx;
-        private Class @class;
+        private readonly ASTContext ctx;
+        private readonly Class @class;
 
         public RegisterSourceFileGenerator(ASTContext ctx, Class @class)
         {
@@ -15,7 +15,7 @@ namespace JSGenerator
             this.ctx = ctx;
         }
 
-        public string getSourceFileContent()
+        public string GetSourceFileContent()
         {
             string className = @class.Name;
             Func<string> retrieveInstance = delegate
@@ -25,7 +25,7 @@ JSWrapper{className}* wrapper = reinterpret_cast<JSWrapper{className}*>(JS_GetOp
 {className}* instance = wrapper->instance;";
             };
             string ret = @$"
-{getIncludeContent()}
+{GetIncludeContent()}
 static JSClassID js_{className}_class_id;
 
 JSClassID get_js_{className}_class_id()
@@ -33,35 +33,35 @@ JSClassID get_js_{className}_class_id()
     return js_{className}_class_id;
 }}
 
-{getFinalizerContent()}
-{getCtorContent()}
-{MemberFunctionGenerator.get(@class, getSupportMemberMethod(@class), retrieveInstance, null)}
-{getGetPropContent()}
-{getSetPropContent()}
-{getClassDefContent()}
-{getClassSetModuleExportContent()}
-{getClassAddModuleExportContent()}
+{GetFinalizerContent()}
+{GetCtorContent()}
+{MemberFunctionGenerator.Get(@class, GetSupportMemberMethod(@class), retrieveInstance, null)}
+{GetGetPropContent()}
+{GetSetPropContent()}
+{GetClassDefContent()}
+{GetClassSetModuleExportContent()}
+{GetClassAddModuleExportContent()}
 ";
             return ret;
         }
 
-        public static string getVectorIncludeContent(Class @class)
+        public static string GetVectorIncludeContent(Class @class)
         {
             string vectorInclude = "";
 
-            foreach (TemplateSpecializationType templateSpecializationType in FindVectorType.Instance.findTemplateSpecializationTypes(@class).Values)
+            foreach (TemplateSpecializationType templateSpecializationType in FindVectorType.Instance.FindTemplateSpecializationTypes(@class).Values)
             {
-                vectorInclude += $@"#include ""{CPPVectorRegisterGenerator.getIncludeFileName(templateSpecializationType)}""";
+                vectorInclude += $@"#include ""{CPPVectorRegisterGenerator.GetIncludeFileName(templateSpecializationType)}""";
                 vectorInclude += "\n";
             }
             return vectorInclude;
         }
 
-        public string getIncludeContent()
+        public string GetIncludeContent()
         {
             string className = @class.Name;
             string headerFilePath = @class.TranslationUnit.IncludePath;
-            string vectorInclude = getVectorIncludeContent(@class);
+            string vectorInclude = GetVectorIncludeContent(@class);
 
             string ret = @$"
 #include ""Class{className}Register.h""
@@ -70,13 +70,13 @@ JSClassID get_js_{className}_class_id()
             return ret;
         }
 
-        public static string getVectorVarContent(Class @class)
+        public static string GetVectorVarContent(Class @class)
         {
             string vectorVarContent = "";
-            List<Field> fields = getSupportFields(@class);
+            List<Field> fields = GetSupportFields(@class);
             foreach (Field field in fields)
             {
-                if (field.Type is TemplateSpecializationType && FindVectorType.Instance.isStdVector(field.Type as TemplateSpecializationType))
+                if (field.Type is TemplateSpecializationType && FindVectorType.Instance.IsStdVector(field.Type as TemplateSpecializationType))
                 {
                     TemplateSpecializationType templateSpecializationType = field.Type as TemplateSpecializationType;
                     string typeName = templateSpecializationType.Arguments[0].ToString();
@@ -98,12 +98,12 @@ JSClassID get_js_{className}_class_id()
             return vectorVarContent;
         }
 
-        public string getCtorContent()
+        public string GetCtorContent()
         {
             string className = @class.Name;
             string newContent = "";
-            List<Method> methods = getSupportContructorMethod(@class);
-            string vectorVarContent = getVectorVarContent(@class);
+            List<Method> methods = GetSupportContructorMethod(@class);
+            string vectorVarContent = GetVectorVarContent(@class);
 
             for (int i = 0; i < methods.Count; i++)
             {
@@ -114,10 +114,10 @@ JSClassID get_js_{className}_class_id()
                     for (int parameterIndex = 0; parameterIndex < method.Parameters.Count; parameterIndex++)
                     {
                         Parameter parameter = method.Parameters[parameterIndex];
-                        parametersCodeLine += MemberFunctionGenerator.getParameterContent(parameter, parameterIndex);
+                        parametersCodeLine += MemberFunctionGenerator.GetParameterContent(parameter, parameterIndex);
                     }
 
-                    string vlist = MemberFunctionGenerator.getVlist(method.Parameters.Count);
+                    string vlist = MemberFunctionGenerator.GetVlist(method.Parameters.Count);
                     newContent += $@"
 if (argc == {method.Parameters.Count})
 {{
@@ -150,7 +150,7 @@ static JSValue js_{className}_ctor(JSContext* ctx, JSValueConst new_target, int 
             return ret;
         }
 
-        public string getFinalizerContent()
+        public string GetFinalizerContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -168,7 +168,7 @@ static void js_{className}_finalizer(JSRuntime* rt, JSValue val)
             return ret;
         }
 
-        public string getClassDefContent()
+        public string GetClassDefContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -182,7 +182,7 @@ static JSClassDef* js_{className}_class()
             return ret;
         }
 
-        public string getClassAddModuleExportContent()
+        public string GetClassAddModuleExportContent()
         {
             string className = @class.Name;
             string ret = $@"
@@ -193,7 +193,7 @@ int js_{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def)
             return ret;
         }
 
-        public string getClassSetModuleExportContent()
+        public string GetClassSetModuleExportContent()
         {
             string className = @class.Name;
             string propFunc = "";
@@ -205,7 +205,7 @@ int js_{className}_AddModuleExport(JSContext* ctx, JSModuleDef* def)
                 propFunc += $@"js_cgetset_magic_def(""{name}"", js_{className}_get_prop, js_{className}_set_prop, {i})," + "\n";
             }
 
-            List<Method> supportMemberMethods = getSupportMemberMethod(@class);
+            List<Method> supportMemberMethods = GetSupportMemberMethod(@class);
             for (int i = 0; i < supportMemberMethods.Count; i++)
             {
                 Method method = supportMemberMethods[i];
@@ -269,14 +269,14 @@ int js_{className}_SetModuleExport(JSContext* ctx, JSModuleDef* def)
             return ret;
         }
 
-        public string getGetPropContent()
+        public string GetGetPropContent()
         {
             string className = @class.Name;
             string content = "";
             for (int i = 0; i < @class.Fields.Count; i++)
             {
                 Field field = @class.Fields[i];
-                content += getGetPropMagicContent(field, i) + "\n";
+                content += GetGetPropMagicContent(field, i) + "\n";
             }
 
             string ret = $@"
@@ -291,7 +291,7 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             return ret;
         }
 
-        private static Dictionary<string, string> getNewTypeMap()
+        private static Dictionary<string, string> GetNewTypeMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["std::string"] = "JS_NewString";
@@ -307,7 +307,7 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             return typeMap;
         }
 
-        private static Dictionary<string, string> getToTypeMap()
+        private static Dictionary<string, string> GetToTypeMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["std::string"] = "JS_ToString";
@@ -323,7 +323,7 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             return typeMap;
         }
 
-        private static Dictionary<string, string> getTypeDMap()
+        private static Dictionary<string, string> GetTypeDMap()
         {
             Dictionary<string, string> typeMap = new Dictionary<string, string>();
             typeMap["sbyte"] = "int";
@@ -338,7 +338,7 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             return typeMap;
         }
 
-        private static string getNamespaceFieldType(Field field)
+        private static string GetNamespaceFieldType(Field field)
         {
             string @namespace = "";
             if (field.Type is TypedefType)
@@ -361,22 +361,22 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             }
         }
 
-        public static string getGetPropMagicContent(Field field, int magic)
+        public static string GetGetPropMagicContent(Field field, int magic)
         {
             string content = "";
             if (field.Type is PointerType)
             {
                 content = $@"return JS_GetPropertyStr(ctx, this_val, ""{magic}{field.LogicalOriginalName}"");";
             }
-            else if (field.Type is TemplateSpecializationType && FindVectorType.Instance.isStdVector(field.Type as TemplateSpecializationType))
+            else if (field.Type is TemplateSpecializationType && FindVectorType.Instance.IsStdVector(field.Type as TemplateSpecializationType))
             {
 
                 content = $@"return JS_GetPropertyStr(ctx, this_val, ""@{field.LogicalOriginalName}"");";
             }
             else
             {
-                Dictionary<string, string> typeMap = getNewTypeMap();
-                string fieldType = getNamespaceFieldType(field);
+                Dictionary<string, string> typeMap = GetNewTypeMap();
+                string fieldType = GetNamespaceFieldType(field);
                 string jsFunc = "";
                 string fix = "";
                 if (fieldType == "std::string")
@@ -399,14 +399,14 @@ static JSValue js_{className}_get_prop(JSContext* ctx, JSValueConst this_val, in
             return ret;
         }
 
-        public string getSetPropContent()
+        public string GetSetPropContent()
         {
             string className = @class.Name;
             string content = "";
             for (int i = 0; i < @class.Fields.Count; i++)
             {
                 Field field = @class.Fields[i];
-                content += getSetPropMagicContent(field, i) + "\n";
+                content += GetSetPropMagicContent(field, i) + "\n";
             }
 
             string ret = $@"
@@ -421,7 +421,7 @@ static JSValue js_{className}_set_prop(JSContext* ctx, JSValueConst this_val, JS
             return ret;
         }
 
-        public static string getSetPropMagicContent(Field field, int magic)
+        public static string GetSetPropMagicContent(Field field, int magic)
         {
             string content = "";
 
@@ -431,7 +431,7 @@ static JSValue js_{className}_set_prop(JSContext* ctx, JSValueConst this_val, JS
                 string className = (pointerType.Pointee as TagType).Declaration.Name;
                 content = $@"
 extern JSClassID get_js_{className}_class_id();
-{getJSWrapperContent(className, "")}
+{GetJSWrapperContent(className, "")}
 if (JSWrapper{className}* wrapper{className} = reinterpret_cast<JSWrapper{className}*>(JS_GetOpaque2(ctx, val, get_js_{className}_class_id())))
 {{
     instance->{field.LogicalOriginalName} = reinterpret_cast<decltype(instance->{field.LogicalOriginalName})>(wrapper{className}->instance);
@@ -440,11 +440,11 @@ if (JSWrapper{className}* wrapper{className} = reinterpret_cast<JSWrapper{classN
     return JS_UNDEFINED;
 }}";
             }
-            else if (field.Type is TemplateSpecializationType && FindVectorType.Instance.isStdVector(field.Type as TemplateSpecializationType))
+            else if (field.Type is TemplateSpecializationType && FindVectorType.Instance.IsStdVector(field.Type as TemplateSpecializationType))
             {
                 TemplateSpecializationType templateSpecializationType = field.Type as TemplateSpecializationType;
                 string typeName = templateSpecializationType.Arguments[0].ToString();
-                Dictionary<string, string> typeMap = getToTypeMap();
+                Dictionary<string, string> typeMap = GetToTypeMap();
                 string jsFunc = "";
                 if (typeMap.ContainsKey(typeName))
                 {
@@ -467,10 +467,10 @@ return JS_UNDEFINED;
             }
             else
             {
-                Dictionary<string, string> typeMap = getToTypeMap();
-                Dictionary<string, string> typeDMap = getTypeDMap();
+                Dictionary<string, string> typeMap = GetToTypeMap();
+                Dictionary<string, string> typeDMap = GetTypeDMap();
 
-                string fieldType = getNamespaceFieldType(field);
+                string fieldType = GetNamespaceFieldType(field);
                 string jsFunc = "";
                 string type = "";
                 if (typeMap.ContainsKey(fieldType))
@@ -506,7 +506,7 @@ return JS_UNDEFINED;";
             return ret;
         }
 
-        private string getFullClassName()
+        private string GetFullClassName()
         {
             string full = @class.Name;
             DeclarationContext declarationContext = @class.Namespace;
@@ -518,7 +518,7 @@ return JS_UNDEFINED;";
             return full;
         }
 
-        public static List<Method> getSupportContructorMethod(Class @class)
+        public static List<Method> GetSupportContructorMethod(Class @class)
         {
             List<Method> methods = new List<Method>();
             foreach (Method constructor in @class.Constructors)
@@ -534,7 +534,7 @@ return JS_UNDEFINED;";
             return methods;
         }
 
-        public static List<Method> getSupportMemberMethod(Class @class)
+        public static List<Method> GetSupportMemberMethod(Class @class)
         {
             List<Method> methods = new List<Method>();
             foreach (Method memberFunction in @class.Methods)
@@ -550,12 +550,12 @@ return JS_UNDEFINED;";
             return methods;
         }
 
-        public static List<Field> getSupportFields(Class @class)
+        public static List<Field> GetSupportFields(Class @class)
         {
             return @class.Fields;
         }
 
-        private string getHeaderFileContent()
+        private string GetHeaderFileContent()
         {
             string className = @class.Name;
             string headerFilePath = @class.TranslationUnit.IncludePath;
@@ -564,7 +564,7 @@ return JS_UNDEFINED;";
 #pragma once
 #include ""{headerFilePath}""
 #include ""_QuickjsHelper.h""
-{getJSWrapperContent(className, $@"
+{GetJSWrapperContent(className, $@"
 static inline JSWrapper{className}* UnretainedSetOpaque(JSValue objectClass)
 {{
     JSWrapper{className} * wrapper = new JSWrapper{className}();
@@ -576,7 +576,7 @@ JSClassID get_js_{className}_class_id();
             return ret;
         }
 
-        public static string getJSWrapperContent(string className, string content)
+        public static string GetJSWrapperContent(string className, string content)
         {
             return $@"
 struct JSWrapper{className}
@@ -588,18 +588,18 @@ struct JSWrapper{className}
 }};";
         }
 
-        public void save(string outputFolderPath)
+        public void Save(string outputFolderPath)
         {
             System.IO.Directory.CreateDirectory(outputFolderPath);
 
             string className = @class.Name;
             string fileName = $"Class{className}Register.cpp";
             string headerFileName = $"Class{className}Register.h";
-            System.IO.File.WriteAllText(outputFolderPath + "/" + fileName, getSourceFileContent());
-            System.IO.File.WriteAllText(outputFolderPath + "/" + headerFileName, getHeaderFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + fileName, GetSourceFileContent());
+            System.IO.File.WriteAllText(outputFolderPath + "/" + headerFileName, GetHeaderFileContent());
         }
 
-        public Tuple<string, string, string> getRegisterClassCallerContent()
+        public Tuple<string, string, string> GetRegisterClassCallerContent()
         {
             string className = @class.Name;
             Tuple<string, string, string> tuple = new Tuple<string, string, string>($@"
