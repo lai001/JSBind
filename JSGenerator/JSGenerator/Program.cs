@@ -68,7 +68,34 @@ namespace JSGenerator
 
         public void Postprocess(Driver driver, ASTContext ctx)
         {
-            _ = new JSClassRegister(ctx, config.ClassName);
+            //_ = new JSClassRegister(ctx, config.ClassName);
+
+            List<Class> classes = Misc.FindClasses(ctx, config.ClassName);
+            //Class classA = classes[0];
+            //foreach (var Field in classA.Fields)
+            //{
+            //    if (Field.QualifiedType.Type is CppSharp.AST.TypedefType)
+            //    {
+            //        TypedefType t =  (TypedefType)Field.QualifiedType.Type;
+            //        Console.WriteLine(t.Declaration.QualifiedOriginalName);
+            //    }
+            //    if (Field.QualifiedType.Type is CppSharp.AST.BuiltinType)
+            //    {
+            //        BuiltinType t = (BuiltinType)Field.QualifiedType.Type;
+            //        Console.WriteLine(t.Type);
+            //    }
+            //}
+
+            foreach (var @class in classes)
+            {
+                RegisterTemplateGenerator Generator = new RegisterTemplateGenerator(ctx, @class);
+#if (DEBUG)
+                const string OutputFolderPath = "../Debug/Register";
+#else
+                            const string OutputFolderPath = "../Release/Register";
+#endif
+                Generator.Save(OutputFolderPath);
+            }
         }
 
         public void Preprocess(Driver driver, ASTContext ctx)

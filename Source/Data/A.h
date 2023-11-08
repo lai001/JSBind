@@ -35,6 +35,10 @@ public:
 	signed short int v9;
 	float v10;
 	double v11;
+    bool v12;
+    char *v13;
+    long long v14;
 
 	B* b;
 };
+

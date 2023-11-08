@@ -27,7 +27,7 @@ task("setup_project")
         import("lib.detect.find_program")
         import("core.base.option")
 
-        local vsxmake = "vsxmake2019"
+        local vsxmake = "vsxmake2022"
         for _, v in ipairs({"vsxmake2017", "vsxmake2019", "vsxmake2022"}) do
             if option.get(v) then
                 vsxmake = v
@@ -76,13 +76,14 @@ task("setup_project")
         }
     }
 
-task("clang_format")
+task("fmt")
     on_run(function ()
         import("lib.detect.find_program")
         local program = find_program("clang-format")
         local function doFormat(folderPath, suffix) 
-            local style = "Microsoft";
+            -- local style = "Microsoft";
             -- local style = "LLVM";
+            local style = "file";
             if os.exists(folderPath) and #os.files(path.join(folderPath, "*." .. suffix)) > 0 then
                 os.execv(program, {"-style=" .. style, "-i", path.join(folderPath, "*." .. suffix)})
             end            
@@ -93,19 +94,20 @@ task("clang_format")
             doFormat(folderPath, "cpp")
         end        
         if program == "clang-format" then 
+            clangformatFiles("Contrast")
+            clangformatFiles("Lib")
             clangformatFiles("JSGenerator/build/Register")
             clangformatFiles("JSGenerator/build/Debug/Register")
             clangformatFiles("JSGenerator/build/Release/Register")
-            clangformatFiles("Source")
         end
     end)
 
     set_menu {
-        usage = "xmake clang_format",
-        description = "Format binding code.",
+        usage = "xmake fmt",
+        description = "",
         options = {
         }
-    }
+    }    
 
 task("generate_binding")
     on_run(function ()
@@ -141,7 +143,7 @@ task("generate_binding")
                 os.execv("./JSGenerator.exe", { path.join(os.scriptdir(), ".xmake/Generator.json") })
             end)            
         end     
-        task.run("clang_format")
+        task.run("fmt")
     end)
 
     set_menu {
@@ -151,12 +153,12 @@ task("generate_binding")
         }
     }
     
-target("generate_binding")
-    set_kind("phony")
-    before_build(function (target)
-        import("core.project.task")
-        task.run("generate_binding")
-    end)
+-- target("generate_binding")
+--     set_kind("phony")
+--     before_build(function (target)
+--         import("core.project.task")
+--         task.run("generate_binding")
+--     end)
 
 target("quickjs")
     set_kind("static")
@@ -204,53 +206,120 @@ target("quickjs")
         add_cflags(format([[-D_GNU_SOURCE -DCONFIG_VERSION="%s" -DCONFIG_BIGNUM]], os.date('%Y-%m-%d %H:%M:%S')))
     end
 
-target("qjs")
-    set_kind("binary")
-    add_languages("c11")
-    add_deps("quickjs")
-    add_rules("mode.debug", "mode.release")
-    local source_files = {
-		"qjs.c",
-		"repl.c",
-		"qjscalc.c"
-	}
-    for i, v in ipairs(source_files) do 
-        add_files(ThirdParty .. "/quickjspp/" .. v)
-    end
-    add_defines(js_defines)
-    set_runargs(os.scriptdir() .. "/main.js")
+-- target("qjs")
+--     set_kind("binary")
+--     add_languages("c11")
+--     add_deps("quickjs")
+--     add_rules("mode.debug", "mode.release")
+--     local source_files = {
+-- 		"qjs.c",
+-- 		"repl.c",
+-- 		"qjscalc.c"
+-- 	}
+--     for i, v in ipairs(source_files) do 
+--         add_files(ThirdParty .. "/quickjspp/" .. v)
+--     end
+--     add_defines(js_defines)
+--     set_runargs(os.scriptdir() .. "/main.js")
 
-target("qjsc")
-    set_kind("binary")
+-- target("qjsc")
+--     set_kind("binary")
+--     add_rules("mode.debug", "mode.release")
+--     add_languages("c11")
+--     add_deps("quickjs")
+--     add_files(ThirdParty .. "/quickjspp/qjsc.c")
+--     add_defines(js_defines)
+
+-- target("JSBind")
+--     set_kind("binary")
+--     set_runargs(path.join(os.scriptdir(), "Scripts/main.js"))
+--     add_languages("c++17", "c11")
+--     add_rules("mode.debug", "mode.release")
+--     add_files("Source/**.cpp")
+--     add_headerfiles("Source/**.h")
+--     add_includedirs("Source")
+--     local folder = "JSGenerator/build/Debug/Register"
+--     if is_mode("release") then
+--         folder = "JSGenerator/build/Release/Register"
+--     end
+--     add_files(folder .. "/*.cpp")
+--     add_headerfiles(folder .. "/*.h")
+--     add_includedirs(folder)
+--     add_deps("quickjs")
+--     add_deps("Foundation")
+--     add_deps("Lib")
+--     add_packages("spdlog")
+--     add_defines(js_defines)
+--     after_build(function (target) 
+--         os.cp("Scripts", target:targetdir())
+--     end)
+
+target("Scripts")
+    set_kind("phony")
+    add_headerfiles("Scripts/*.js")
+
+target("Lib")
+    set_kind("static")
+    set_symbols("debug")
+    add_languages("c++17", "c11")
     add_rules("mode.debug", "mode.release")
-    add_languages("c11")
+    add_files("Lib/*.cpp")
+    add_headerfiles("Lib/*.h")
+    add_includedirs("Lib", { interface = true })
     add_deps("quickjs")
-    add_files(ThirdParty .. "/quickjspp/qjsc.c")
     add_defines(js_defines)
 
-target("JSBind")
+target("Contrast")
     set_kind("binary")
+    set_symbols("debug")
     set_runargs(path.join(os.scriptdir(), "Scripts/main.js"))
     add_languages("c++17", "c11")
     add_rules("mode.debug", "mode.release")
-    add_files("Source/**.cpp")
-    add_headerfiles("Source/**.h")
+    add_files("Contrast/*.cpp")
+    add_files("Source/Data/*.cpp")
+    add_headerfiles("Source/Data/*.h")
+    add_headerfiles("Contrast/*.h")
+    add_includedirs("Contrast")
     add_includedirs("Source")
-    local folder = "JSGenerator/build/Debug/Register"
-    if is_mode("release") then
-        folder = "JSGenerator/build/Release/Register"
-    end
-    add_files(folder .. "/*.cpp")
-    add_headerfiles(folder .. "/*.h")
-    add_includedirs(folder)
     add_deps("quickjs")
-    add_deps("Foundation")
+    add_deps("Lib")
     add_packages("spdlog")
     add_defines(js_defines)
     after_build(function (target) 
         os.cp("Scripts", target:targetdir())
     end)
 
-target("Scripts")
-    set_kind("phony")
-    add_headerfiles("Scripts/*.js")
+target("Validation")
+    set_kind("binary")
+    set_symbols("debug")
+    set_runargs(path.join(os.scriptdir(), "Scripts/main.js"))
+    add_languages("c++17", "c11")
+    add_rules("mode.debug", "mode.release")
+    add_files("Validation/*.cpp")
+    add_files("Source/Data/*.cpp")
+    add_headerfiles("Source/Data/*.h")
+    add_headerfiles("Validation/*.h")
+    add_includedirs("Validation")
+    add_includedirs("Source")
+    add_deps("quickjs")
+    add_deps("Lib")
+    add_deps("Gen")
+    add_packages("spdlog")
+    add_defines(js_defines)
+    after_build(function (target) 
+        os.cp("Scripts", target:targetdir())
+    end)
+
+target("Gen")
+    set_kind("static")
+    set_symbols("debug")
+    add_languages("c++17", "c11")
+    add_rules("mode.debug", "mode.release")
+    add_files("JSGenerator/build/Debug/Register/**.cpp")
+    add_headerfiles("JSGenerator/build/Debug/Register/**.h")
+    add_includedirs("JSGenerator/build/Debug/Register")
+    add_includedirs("JSGenerator/build/Debug/", { interface = true })
+    add_includedirs("Source")
+    add_deps("quickjs")
+    add_deps("Lib")
+    add_defines(js_defines)
