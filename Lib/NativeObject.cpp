@@ -15,19 +15,6 @@ JSCFunctionListEntry createMemberFunc(const char *name, JSCFunction cfunc)
     return entry;
 }
 
-JSCFunctionListEntry createMemberPropertyMagic(const char *name, decltype(JSCFunctionType::getter_magic) getter,
-                                               decltype(JSCFunctionType::setter_magic) setter, const int16_t magic)
-{
-    JSCFunctionListEntry entry = JSCFunctionListEntry();
-    entry.name = name;
-    entry.magic = magic;
-    entry.prop_flags = JS_PROP_CONFIGURABLE;
-    entry.def_type = JS_DEF_CGETSET_MAGIC;
-    entry.u.getset.get.getter_magic = getter;
-    entry.u.getset.set.setter_magic = setter;
-    return entry;
-}
-
 JSCFunctionListEntry createMemberProperty(const char *name, decltype(JSCFunctionType::getter) getter,
                                           decltype(JSCFunctionType::setter) setter)
 {
@@ -47,7 +34,7 @@ JSValue importClass(JSContext *ctx, JSClassID &classID, JSClassDef &classDef, co
     JS_NewClass(JS_GetRuntime(ctx), classID, &classDef);
     JSValue proto = JS_NewObject(ctx);
     JS_SetPropertyFunctionList(ctx, proto, tab, len);
-    JSValue constructor = JS_NewCFunction2(ctx, ctor, classDef.class_name, 2, JS_CFUNC_constructor, 0);
+    JSValue constructor = JS_NewCFunction2(ctx, ctor, classDef.class_name, 0, JS_CFUNC_constructor, 0);
     JS_SetConstructor(ctx, constructor, proto);
     JS_SetClassProto(ctx, classID, proto);
     return constructor;

@@ -16,9 +16,6 @@ JSValue importClass(JSContext *ctx, JSClassID &classID, JSClassDef &classDef, co
                     const int len, JSCFunction *ctor);
 JSCFunctionListEntry createMemberFunc(const char *name, JSCFunction cfunc);
 
-JSCFunctionListEntry createMemberPropertyMagic(const char *name, decltype(JSCFunctionType::getter_magic) getter,
-                                               decltype(JSCFunctionType::setter_magic) setter, const int16_t magic);
-
 JSCFunctionListEntry createMemberProperty(const char *name, decltype(JSCFunctionType::getter) getter,
                                           decltype(JSCFunctionType::setter) setter);
 
@@ -92,14 +89,17 @@ template <typename TNativeClassType> struct NativeObject
         return object;
     }
 
-    static TNativeClassType *getNativeObjectPointer(JSContext *ctx, JSValueConst this_val)
+    static TNativeClassType *getNativeObjectPointer(JSContext *ctx, JSValueConst thisVal)
     {
+        assert(ctx);
         NativeObjectHandle<TNativeClassType> *nativeObject;
         void *ppopaque;
-        JSValue property = JS_GetPropertyStr(ctx, this_val, "@nativeObject");
+        JSValue property = JS_GetPropertyStr(ctx, thisVal, "@nativeObject");
         JS_GetClassID(property, &ppopaque);
+        assert(ppopaque);
         JS_FreeValue(ctx, property);
         nativeObject = reinterpret_cast<NativeObjectHandle<TNativeClassType> *>(ppopaque);
+        assert(nativeObject);
         return nativeObject->getPtr();
     }
 

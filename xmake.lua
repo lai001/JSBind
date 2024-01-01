@@ -4,7 +4,8 @@ add_requires("spdlog")
 local ThirdParty = ".xmake/ThirdParty"
 includes(ThirdParty .. "/Foundation/Foundation")
 
-local js_defines = {"CONFIG_BIGNUM", "JS_STRICT_NAN_BOXING"}
+-- local js_defines = {"CONFIG_BIGNUM", "JS_STRICT_NAN_BOXING"}
+local js_defines = {"JS_STRICT_NAN_BOXING"}
         
 local function chdir(cd, path, caller) 
     local oldir = cd(path)
@@ -315,11 +316,13 @@ target("Gen")
     set_symbols("debug")
     add_languages("c++17", "c11")
     add_rules("mode.debug", "mode.release")
+    add_rules("c++.unity_build")
     add_files("JSGenerator/build/Debug/Register/**.cpp")
     add_headerfiles("JSGenerator/build/Debug/Register/**.h")
     add_includedirs("JSGenerator/build/Debug/Register")
     add_includedirs("JSGenerator/build/Debug/", { interface = true })
     add_includedirs("Source")
+    add_filegroups("Register", {rootdir="JSGenerator/build/Debug/Register/", files={"**.cpp", "**.h"}})
     add_deps("quickjs")
     add_deps("Lib")
     add_defines(js_defines)

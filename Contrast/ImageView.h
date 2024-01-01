@@ -1,5 +1,5 @@
-#ifndef Contrast_B_H
-#define Contrast_B_H
+#ifndef Contrast_ImageView_H
+#define Contrast_ImageView_H
 
 #include <vector>
 extern "C"
@@ -9,7 +9,7 @@ extern "C"
 
 namespace jsbind
 {
-struct B
+struct ImageView
 {
     static JSClassID classID;
     static JSClassDef classDef;

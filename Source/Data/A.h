@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 
-#include "B.h"
+#include "View.h"
 
 struct A : public std::enable_shared_from_this<A>
 {
@@ -19,7 +19,7 @@ public:
 
 	void mf2(double const a, int b);
 
-	void printB();
+	void printView();
 
 	virtual std::string getName() const;
 
@@ -39,6 +39,6 @@ public:
     char *v13;
     long long v14;
 
-	B* b;
+	View *view;
 };
 

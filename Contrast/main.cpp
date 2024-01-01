@@ -6,14 +6,17 @@
 
 #include "QuickjsHelper.h"
 #include "A.h"
-#include "B.h"
-#include "BB.h"
+#include "View.h"
+#include "Button.h"
+#include "ImageView.h"
+#include "Data/Button.h"
 
 void registerClasses(JSContext *ctx, JSValue obj)
 {
     jsbind::A::import(ctx, obj, nullptr);
-    jsbind::B::import(ctx, obj, nullptr);
-    jsbind::BB::import(ctx, obj, nullptr);
+    jsbind::View::import(ctx, obj, nullptr);
+    jsbind::Button::import(ctx, obj, nullptr);
+    jsbind::ImageView::import(ctx, obj, nullptr);
 }
 
 int main(int argc, char **argv)
@@ -32,13 +35,15 @@ int main(int argc, char **argv)
     js_init_module_os(ctx, "os");
 
     JSValue globalObj = JS_GetGlobalObject(ctx);
-
     registerClasses(ctx, globalObj);
+    {
+        ::Button *button = new Button();
+        JS_SetPropertyStr(ctx, globalObj, "nativeView", jsbind::View::setNativeObjectPointer(ctx, button, true));
+    }
     JS_FreeValue(ctx, globalObj);
 
     QuickjsHelper::evalFile(ctx, file.c_str(), JS_EVAL_TYPE_MODULE);
 
-    JS_RunGC(rt);
     js_std_free_handlers(rt);
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);

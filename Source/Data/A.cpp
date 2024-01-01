@@ -6,7 +6,7 @@ A::A()
 }
 
 A::A(int v4, int v6)
-    : v4(v4), v6(v6), b(nullptr)
+    : v4(v4), v6(v6), view(nullptr)
 {
 }
 
@@ -30,15 +30,15 @@ void A::mf2(double const a, int b)
     spdlog::debug("void A::mf2(double const a, int b)");
 }
 
-void A::printB()
+void A::printView()
 {
-    if (b)
+    if (view)
     {
-        spdlog::debug("{}", b->data0);
+        spdlog::debug("{}", view->getDescription());
     }
     else
     {
-        spdlog::debug("b is nullptr.");
+        spdlog::debug("view is nullptr.");
     }
 }
 

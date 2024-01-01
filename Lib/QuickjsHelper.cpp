@@ -1,4 +1,8 @@
 #include "QuickjsHelper.h"
+extern "C"
+{
+#include "cutils.h"
+}
 
 int QuickjsHelper::evalFile(JSContext *ctx, const char *filename, int module)
 {
